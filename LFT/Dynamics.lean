@@ -23,8 +23,7 @@ The whole file remains **sorry-free**.
 -/
 
 import LFT.Complex
-import Mathlib.Data.Complex.Abs
-import Mathlib.Data.List.BigOperators.Basic
+import Mathlib.Analysis.Complex.Basic
 import Mathlib.Tactic
 
 open Classical

@@ -79,44 +79,13 @@ def IsAdmissible (G : LogicalGraph) [HasNegation G.Vertex] : Prop :=
   SatisfiesNonContradiction G ∧
   SatisfiesExcludedMiddle G
 
-
 /-- The space of admissible graphs -/
 structure Omega where
   graph : LogicalGraph
   neg : HasNegation graph.Vertex
   admissible : IsAdmissible graph
 
--- Test: The trivial one-vertex graph is admissible
-example : Omega := ⟨
-  -- graph
-  {
-    Vertex := Unit
-    Edge := fun _ _ => True
-    decidable_vertex := inferInstance
-    decidable_edge := fun _ _ => inferInstance
-  },
-  -- neg
-  {
-    neg := id
-    neg_involutive := fun _ => rfl
-  },
-  -- admissible
-  by
-    unfold IsAdmissible SatisfiesIdentity SatisfiesTransitivity
-           SatisfiesNonContradiction SatisfiesExcludedMiddle
-    refine ⟨?_, ?_, ?_, ?_⟩
-    · intro v; trivial
-    · intros; trivial
-    · intro v
-      intro ⟨w, h_reach_w, h_reach_neg_w⟩
-      -- Since neg = id, this is a contradiction only if we never claimed it
-      sorry  -- This example might not work!
-    · intro v _
-      use ()
-      left
-      exact Reachable.refl v
-⟩
-
-
+-- Note: A trivial graph with identity negation is NOT admissible
+-- because it violates non-contradiction (v reaches both v and neg(v) = v)
 
 end LFT

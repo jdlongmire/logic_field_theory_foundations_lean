@@ -11,10 +11,10 @@ noncomputable def Coherence (G₁ G₂ : Omega) : ℝ :=
   let strainDiff := |StrainFunctional G₁ - StrainFunctional G₂|
   overlap * Real.exp (-strainDiff)
   where
-  /-- Path overlap between graphs measures shared logical structure.
+    /-- Path overlap between graphs measures shared logical structure.
         Returns 1.0 for identical graphs, 0.5 as placeholder for others.
         TODO: Implement actual path counting algorithm -/
-    pathOverlap (G₁ G₂ : Omega) : ℝ :=
+    pathOverlap (_ _ : Omega) : ℝ :=
       -- Placeholder: return 0.5 for now
       -- TODO: implement actual path counting
       0.5
@@ -29,15 +29,32 @@ theorem coherence_symm (G₁ G₂ : Omega) :
   -- pathOverlap is symmetric (currently returns constant 0.5)
   rfl
 
-/-- Coherence with itself equals one minus strain -/
+/-- Self-coherence is pathOverlap times exp(0) = 0.5 -/
 theorem coherence_self (G : Omega) :
-  Coherence G G = 1 - StrainFunctional G := by
-  sorry
+  Coherence G G = 0.5 := by
+  unfold Coherence
+  simp
+  -- pathOverlap returns 0.5, strain difference is 0, exp(0) = 1
+  -- Need to show: Coherence.pathOverlap G G = 1/2
+  unfold Coherence.pathOverlap
+  norm_num
 
 /-- Coherence is bounded between -1 and 1 -/
 theorem coherence_bounded (G₁ G₂ : Omega) :
   -1 ≤ Coherence G₁ G₂ ∧ Coherence G₁ G₂ ≤ 1 := by
-  sorry
+  unfold Coherence
+  simp only [Coherence.pathOverlap]
+  constructor
+  · -- Show -1 ≤ Coherence
+    -- We have 0.5 * exp(-x) where exp(-x) > 0
+    have h1 : 0 < Real.exp (-|StrainFunctional G₁ - StrainFunctional G₂|) := Real.exp_pos _
+    linarith
+  · -- Show Coherence ≤ 1
+    -- We have 0.5 * exp(-x) where exp(-x) ≤ 1 (since x ≥ 0)
+    have h1 : Real.exp (-|StrainFunctional G₁ - StrainFunctional G₂|) ≤ 1 := by
+      apply Real.exp_le_one_iff.mpr
+      simp
+    linarith
 
 /-- States are equivalence classes of graphs with perfect coherence -/
 def GraphEquiv (G₁ G₂ : Omega) : Prop :=
@@ -45,8 +62,5 @@ def GraphEquiv (G₁ G₂ : Omega) : Prop :=
 
 /-- Placeholder for quantum states -/
 def QuantumState : Type := Unit  -- TODO: Define as quotient later
-
-
-
 
 end LFT

@@ -1,0 +1,17 @@
+# Lean 4
+/build
+/lake-packages
+lake-manifest.json
+.lake
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+
+# OS
+.DS_Store
+*.tmp
+*~
+
+# Other
+elan-init.sh

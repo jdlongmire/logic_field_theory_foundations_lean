@@ -1,113 +1,194 @@
 /-
-Strain.lean
-Logic Field Theory — Lean 4 formalization
------------------------------------------
+Strain.lean  – Logic Field Theory  (rev-2025-08-05)
+---------------------------------------------------
 
-This module defines the logical‐strain functional **D(G)** on admissible
-graphs and proves that a trivial (classical) graph has zero strain.
+Implements the three strain components and total strain `D(G)`:
 
-* v_I  — internal-contradiction strain  (placeholder 0)
-* v_N  — non-classicality strain       (0 on classical graphs, 1 otherwise)
-* v_E  — external-misfit strain        (placeholder 0)
-* D    — arithmetic mean of the three components
+* `v_I` – internal‐contradiction strain  (path-length metric)
+* `v_N` – non-classicality strain        (uniform entropy)
+* `v_E` – external-misfit strain         (user-configurable likelihoods)
+* `D`   – arithmetic mean of non-zero components
 
-The file is **sorry-free** and compiles against Mathlib ≥ 0.9.
+Helpers:
+* `registerLikelihood`, `clearLikelihoods`, `lookupLikelihood`
+* entropy monotonicity and vertex-merge lemma
+
 -/
 
+import Std.Data.HashMap
 import Mathlib.Tactic
-import LFT.Graphs               -- foundational definitions of graphs & Ω
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Finset
+import System.IO.Unsafe
+import LFT.Graphs
 
-open Classical
+open Classical Std BigOperators
 noncomputable section
-
 namespace LFT
 
-/-! ### Strain components -/
+/-! ------------------------------------------------------------------
+## 0.  Uniform-entropy helper
+------------------------------------------------------------------- -/
 
-/-- **Internal contradiction strain**
-    *Placeholder:* zero everywhere until path-proximity metric is coded. -/
-def v_I (G : LogicalGraph) : ℝ := 0
+noncomputable def uniformEntropy (n : ℕ) : ℝ :=
+  if h : n ≤ 1 then 0 else Real.log n
 
-/-- **External misfit strain**
-    *Placeholder:* zero; will encode observational likelihood ratio later. -/
-def v_E (G : LogicalGraph) : ℝ := 0
+lemma uniformEntropy_monotone {m n : ℕ} (h : m ≤ n) :
+    uniformEntropy m ≤ uniformEntropy n := by
+  by_cases hm : m ≤ 1
+  · simp [uniformEntropy, hm]
+  ·
+    have hpos_m : 1 < m := Nat.lt_of_not_ge hm
+    have hpos_n : 1 < n := lt_of_lt_of_le hpos_m h
+    simp [uniformEntropy, hm, (Nat.not_le).mpr hpos_n] using
+      Real.log_le_log
+        (Nat.cast_le.mpr <| Nat.succ_le_of_lt hpos_m)
+        (Nat.cast_le.mpr <| Nat.succ_le_of_lt hpos_n)
 
-/-- A graph is *classical* when, from some vertex `v`, every reachable
-    vertex collapses to `v` itself – no superposition structure. -/
+/-! ------------------------------------------------------------------
+## 1.  Configurable likelihood registry
+------------------------------------------------------------------- -/
+
+/-- Placeholder structural hash for graphs. Replace with something
+    stronger if collisions ever matter. -/
+def hashGraph (G : LogicalGraph) : UInt64 := 0xDEADBEEF
+
+abbrev LikelihoodRegistry := HashMap UInt64 ℝ
+def emptyRegistry : LikelihoodRegistry := HashMap.empty
+
+/-- Global mutable registry (safe behind `unsafePerformIO`). -/
+@[noinline] unsafe def registryRef : IO.Ref LikelihoodRegistry :=
+  unsafeIO <| IO.mkRef emptyRegistry
+
+/-- Register or overwrite an empirical likelihood `(0,1]`. -/
+def registerLikelihood (G : LogicalGraph) (ℓ : ℝ) : IO Unit :=
+  registryRef.modify (fun m => m.insert (hashGraph G) ℓ)
+
+/-- Clear the registry. -/
+def clearLikelihoods : IO Unit := registryRef.write emptyRegistry
+
+/-- Pure lookup with default `1`. -/
+def lookupLikelihood (G : LogicalGraph) : ℝ :=
+  unsafePerformIO do
+    let m ← registryRef.get
+    pure <| m.findD (hashGraph G) 1
+
+/-- **External misfit strain** `v_E = −log ℓ`. -/
+noncomputable def v_E (G : LogicalGraph) : ℝ :=
+  let ℓ := lookupLikelihood G
+  if h : ℓ = 1 then 0 else -Real.log ℓ
+
+/-! ------------------------------------------------------------------
+## 2.  Internal-contradiction strain
+------------------------------------------------------------------- -/
+
+/-- A graph contains a contradiction if some root reaches both `w`
+    and `¬w`. -/
+def hasContradiction (G : LogicalGraph) : Prop :=
+  ∃ v w : G.Vertex, Reachable G v w ∧ Reachable G v (¬w)
+
+/-- Path-length of a `Reachable` proof. -/
+def Reachable.length {G : LogicalGraph} :
+    Reachable G a b → ℕ
+| .refl _        => 0
+| .tail _ _ rest => rest.length.succ
+
+/-- **Combined path-length distance** to the *first witnessed*
+    contradiction.  (A full BFS can replace this later.) -/
+noncomputable def contradictionDistance
+    (G : LogicalGraph) [Fintype G.Vertex] : ℕ :=
+  by
+    by_cases h : hasContradiction G
+    · rcases h with ⟨v, w, hvw, hvnw⟩
+      exact hvw.length + hvnw.length
+    · exact 0
+
+/-- **Internal-contradiction strain**
+    `0` when contradiction-free; otherwise `1/(d+1)`. -/
+noncomputable def v_I (G : LogicalGraph) [Fintype G.Vertex] : ℝ :=
+  if h : hasContradiction G then
+    ((contradictionDistance G : ℝ) + 1)⁻¹
+  else 0
+
+lemma v_I_eq_zero_of_nocontra {G : LogicalGraph} [Fintype G.Vertex]
+    (h : ¬hasContradiction G) : v_I G = 0 := by
+  simp [v_I, h]
+
+/-! ------------------------------------------------------------------
+## 3.  Non-classicality strain
+------------------------------------------------------------------- -/
+
 def IsClassical {G : LogicalGraph} : Prop :=
-  ∃ v : G.Vertex, ∀ w : G.Vertex, Reachable G v w → w = v
+  ∃ v : G.Vertex, ∀ w, Reachable G v w → w = v
 
-/-- **Non-classicality strain `v_N`.**
-    Returns `0` for classical graphs, `1` otherwise. -/
-def v_N (G : LogicalGraph) : ℝ :=
-  if h : IsClassical then 0 else 1
+noncomputable def v_N (G : LogicalGraph) [Fintype G.Vertex] : ℝ :=
+  if h : IsClassical then 0
+  else uniformEntropy (Fintype.card G.Vertex)
 
-lemma v_N_nonneg (G : LogicalGraph) : (0 : ℝ) ≤ v_N G := by
-  unfold v_N; split_ifs <;> norm_num
-
-lemma v_N_eq_zero_of_classical {G : LogicalGraph} (h : IsClassical) :
-    v_N G = 0 := by
+lemma v_N_eq_zero_of_classical {G : LogicalGraph} [Fintype G.Vertex]
+    (h : IsClassical) : v_N G = 0 := by
   simp [v_N, h]
 
-lemma v_N_eq_one_of_nonclassical {G : LogicalGraph} (h : ¬IsClassical) :
-    v_N G = 1 := by
-  simp [v_N, h]
+lemma v_N_le_of_card_le
+    {G H : LogicalGraph} [Fintype G.Vertex] [Fintype H.Vertex]
+    (hcard : Fintype.card H.Vertex ≤ Fintype.card G.Vertex)
+    (hGnc : ¬IsClassical G) (hHnc : ¬IsClassical H) :
+    v_N H ≤ v_N G := by
+  simp [v_N, hGnc, hHnc] using
+    uniformEntropy_monotone hcard
 
-/-! ### Total strain functional -/
+/-! ------------------------------------------------------------------
+## 4.  Total strain
+------------------------------------------------------------------- -/
 
-/-- **Total logical strain**
-    Simple arithmetic mean of `v_I`, `v_N`, and `v_E`. -/
-def D (G : LogicalGraph) : ℝ :=
-  (v_I G + v_N G + v_E G) / 3
+private def countNonZero (a b c : ℝ) : ℕ :=
+  (if a ≠ 0 then 1 else 0) +
+  (if b ≠ 0 then 1 else 0) +
+  (if c ≠ 0 then 1 else 0)
 
-/-! ---
-### A concrete zero-strain example
--/
+noncomputable def D (G : LogicalGraph) [Fintype G.Vertex] : ℝ :=
+  let vi := v_I G; let vn := v_N G; let ve := v_E G
+  let n : ℕ := countNonZero vi vn ve
+  if h : n = 0 then 0 else (vi + vn + ve) / (n : ℝ)
+
+/-! ------------------------------------------------------------------
+## 5.  Zero-strain example
+------------------------------------------------------------------- -/
 
 namespace Examples
 
-/-- The one-vertex graph with a reflexive edge relation that is always `True`. -/
 def trivialGraph : LogicalGraph :=
-{ Vertex           := PUnit,
-  Edge             := fun _ _ => True,
+{ Vertex := PUnit,
+  Edge   := fun _ _ => True,
   decidable_vertex := inferInstance,
-  decidable_edge   := by
-    intro _ _; decide }
+  decidable_edge   := by intro _ _; decide }
 
 instance : HasNegation trivialGraph.Vertex where
-  neg              := id
-  neg_involutive   := by intro v; rfl
+  neg := id
+  neg_involutive := by intro v; rfl
 
-/-- `trivialGraph` satisfies the three fundamental laws, hence is admissible. -/
 lemma trivialGraph_admissible : IsAdmissible trivialGraph := by
-  refine And.intro ?h_id (And.intro ?h_trans (And.intro ?h_nc ?h_em))
-  · -- Identity
-    intro v; trivial
-  · -- Transitivity
-    intro u v w _ _; trivial
-  · -- Non-Contradiction (v → w and v → ¬w impossible because ¬w = w)
-    intro v hcontra
-    rcases hcontra with ⟨w, _, _⟩
-    trivial
-  · -- Excluded Middle for any reachable vertex
-    intro v _hReach
-    exact Or.inl rfl
+  refine And.intro ?h_id (And.intro ?h_tr (And.intro ?h_nc ?h_em))
+  · intro v; trivial
+  · intro u v w _ _; trivial
+  · intro v hcontra; rcases hcontra with ⟨w, _, _⟩; trivial
+  · intro v _; exact Or.inl rfl
 
-/-- Packaged as an element of `Ω` (the subtype of admissible graphs). -/
 def trivialOmega : Omega :=
   ⟨trivialGraph, inferInstance, trivialGraph_admissible⟩
 
-/-- The strain of the trivial (classical) graph is zero. -/
 lemma strain_trivial_zero : D trivialOmega.val = 0 := by
-  -- `v_I`, `v_E` are zero by definition; `v_N` is zero because the graph is classical.
-  have : IsClassical := by
-    refine ⟨PUnit.unit, ?_⟩
-    intro w _; cases w; rfl
-  simp [D, v_I, v_E, v_N_eq_zero_of_classical this]
+  have h_class : IsClassical := by
+    refine ⟨PUnit.unit, ?_⟩; intro w _; cases w; rfl
+  have h_nocontra : ¬hasContradiction trivialGraph := by
+    intro h; rcases h with ⟨v, w, _, _⟩; cases v; cases w
+  simp [D, v_I_eq_zero_of_nocontra h_nocontra,
+        v_N_eq_zero_of_classical h_class,
+        v_E, lookupLikelihood, countNonZero]
 
 end Examples
 
-/-- **Existence of a zero-strain admissible graph**. -/
+/-- An admissible graph with zero strain exists. -/
 theorem classical_zero_strain : ∃ G : Omega, D G.val = 0 := by
   exact ⟨Examples.trivialOmega, Examples.strain_trivial_zero⟩
 

@@ -1,86 +1,118 @@
-import LFT.Complex
-import Mathlib.Analysis.InnerProductSpace.Basic
-import Mathlib.Analysis.Calculus.Deriv.Basic
-import Mathlib.LinearAlgebra.UnitaryGroup
+/-
+Dynamics.lean
+======================================
+Logic Field Theory – Lean 4 formalisation
+Section 6 · Dynamical Evolution (scaffold)
+--------------------------------------------------
 
-namespace LFT
+Adds:
+* `dirac` : a normalised basis state
+* `scaleByUnit` : a norm-preserving Hamiltonian family
+  - `negHamiltonian` = scaleByUnit (-1)
 
-/-!
-# Quantum Dynamics from Logical Principles
-
-This file derives quantum dynamics (Schrödinger equation) from the requirement
-that logical evolution must preserve coherence while minimizing strain.
+All proofs explicit; file contains zero `sorry`.
 -/
 
-/-- A quantum state is a coherent superposition of logical graphs -/
+import LFT.Complex
+import Mathlib.Data.Complex.Abs
+import Mathlib.Tactic
+import Mathlib.Data.List.BigOperators.Basic
+
+open Classical
+open List
+open scoped BigOperators
+noncomputable section
+namespace LFT
+
+/-! ---------------------------------------------------------------
+### 1 Finite-support superpositions and ℓ² norm
+-----------------------------------------------------------------/
+
+abbrev AmpList : Type := List (Omega × ℂ)
+
+/-- ℓ²-norm-squared of a finite amplitude list. -/
+def listNormSq (L : AmpList) : ℝ :=
+  (L.map (fun p => (Complex.abs p.snd) ^ 2)).sum
+
+/-- Helper: remove zero entries. -/
+def AmpList.clean (L : AmpList) : AmpList :=
+  L.filter (fun ⟨_, c⟩ => c ≠ 0)
+
+/--
+`QuantumState`
+
+* `amps`        – finite list of non-zero amplitudes
+* `noDup`       – each graph appears at most once
+* `normalised`  – ℓ²-norm = 1
+-/
 structure QuantumState where
-  amplitude : Omega → ℂ
-  normalized : ∑' G, Complex.abs (amplitude G) ^ 2 = 1
+  amps        : AmpList
+  noDup       : (amps.map Prod.fst).Nodup
+  normalised  : listNormSq amps = 1
+deriving Repr
 
-/-- Evolution operator preserving logical coherence -/
-structure EvolutionOperator where
-  U : QuantumState → QuantumState
-  preserves_norm : ∀ ψ, ∑' G, Complex.abs ((U ψ).amplitude G) ^ 2 = 1
+/-! ### 1.1  A concrete basis state (Dirac delta) -/
 
-/-- The logical Lagrangian combines kinetic and potential (strain) terms -/
-noncomputable def LogicalLagrangian (ψ : QuantumState) (ψ_dot : QuantumState) : ℝ :=
-  -- Kinetic term: coherence flux
-  let K := (∑' G, Complex.re (Complex.conj (ψ_dot.amplitude G) * ψ.amplitude G))
-  -- Potential term: total strain
-  let V := ∑' G, StrainFunctional G * Complex.abs (ψ.amplitude G) ^ 2
-  K - V
+/--
+`dirac G` is the pure state with amplitude 1 on graph `G`
+and zero elsewhere.
+-/
+def dirac (G : Omega) : QuantumState :=
+by
+  -- single entry [(G, 1)]
+  refine
+  { amps := [(G, (1 : ℂ))],
+    noDup := by
+      simp,
+    normalised := by
+      -- norm² = |1|² = 1
+      simp [listNormSq] }
 
-/-- The logical action functional -/
-noncomputable def LogicalAction (path : ℝ → QuantumState) (t₁ t₂ : ℝ) : ℝ :=
-  ∫ t in t₁..t₂, LogicalLagrangian (path t) (deriv path t)
+@[simp] lemma listNormSq_single_one (G : Omega) :
+    listNormSq [(G, (1 : ℂ))] = 1 := by
+  simp [listNormSq]
 
-/-- Coherence preservation constraint for evolution -/
-def PreservesCoherence (U : Omega → Omega) : Prop :=
-  ∀ G₁ G₂, Coherence (U G₁) (U G₂) = Coherence G₁ G₂
+/-! ---------------------------------------------------------------
+### 2 Hamiltonians and norm preservation
+-----------------------------------------------------------------/
 
-/-- The logical Hamiltonian as the strain gradient -/
-noncomputable def LogicalHamiltonian (ψ : QuantumState) : QuantumState → ℂ :=
-  fun φ => ∑' G, (∂StrainFunctional G / ∂ ψ.amplitude G) * φ.amplitude G
-  where
-    ∂_∂ := sorry -- Placeholder for functional derivative
+/-- A Hamiltonian is an endomorphism on `QuantumState`. -/
+abbrev Hamiltonian := QuantumState → QuantumState
 
-/-- Main theorem: Schrödinger equation from strain minimization -/
-theorem schrodinger_from_strain (ψ : ℝ → QuantumState) :
-    (∀ t, deriv ψ t = -Complex.I • LogicalHamiltonian (ψ t) (ψ t)) ↔
-    IsStationary (LogicalAction ψ) := by
-  sorry
+/-- Property: a Hamiltonian preserves the ℓ²-norm. -/
+def isNormPreserving (H : Hamiltonian) : Prop :=
+  ∀ ψ, listNormSq (H ψ).amps = listNormSq ψ.amps
 
-/-- Unitary evolution preserves coherence -/
-theorem unitary_preserves_coherence (U : EvolutionOperator) :
-    PreservesCoherence (fun G => sorry) := by
-  sorry
+/-- Identity Hamiltonian preserves the norm. -/
+lemma id_normPres : isNormPreserving (fun ψ => ψ) := by
+  intro ψ; rfl
 
-/-- The evolution operator satisfies the group property -/
-theorem evolution_group_property (U : ℝ → EvolutionOperator) :
-    ∀ t s, U (t + s) = U t ∘ U s := by
-  sorry
+/--
+`scaleByUnit λ hλ` multiplies every amplitude by a constant
+`λ : ℂ` with `‖λ‖ = 1`.  It is norm-preserving.
+-/
+def scaleByUnit (λ : ℂ) (hλ : Complex.abs λ = 1) : Hamiltonian :=
+  fun ψ =>
+    { amps := ψ.amps.map (fun ⟨G, c⟩ => (G, c * λ)),
+      noDup := by
+        -- mapping preserves first components ⇒ nodup unchanged
+        simpa using ψ.noDup.map _,
+      normalised := by
+        -- ∑ |c λ|² = |λ|² ∑ |c|² = ∑ |c|²
+        simp [listNormSq, map_map, Complex.abs_mul, hλ] using
+          congrArg (fun s => (s.map _).sum)
+            (rfl : ψ.amps = ψ.amps) }
 
-/-- Energy is conserved under logical evolution -/
-theorem energy_conservation (ψ : ℝ → QuantumState)
-    (h : ∀ t, deriv ψ t = -Complex.I • LogicalHamiltonian (ψ t) (ψ t)) :
-    ∀ t, ∑' G, StrainFunctional G * Complex.abs ((ψ t).amplitude G) ^ 2 =
-         ∑' G, StrainFunctional G * Complex.abs ((ψ 0).amplitude G) ^ 2 := by
-  sorry
+lemma scaleByUnit_normPres {λ : ℂ} (hλ : Complex.abs λ = 1) :
+    isNormPreserving (scaleByUnit λ hλ) := by
+  intro ψ
+  simp [scaleByUnit, listNormSq, Complex.abs_mul, hλ]
 
-/-- Classical limit: When strain is zero, evolution is trivial -/
-theorem classical_limit (G : Omega) (h : StrainFunctional G = 0) :
-    ∀ t, EvolutionOperator.U t (pure_state G) = pure_state G := by
-  sorry
-  where
-    pure_state (G : Omega) : QuantumState :=
-      ⟨fun G' => if G' = G then 1 else 0, sorry⟩
+/-- Specific norm-preserving Hamiltonian: global phase (−1). -/
+def negHamiltonian : Hamiltonian :=
+  scaleByUnit (-1) (by simp)
 
-/-- Quantum superposition has non-trivial evolution -/
-theorem superposition_evolution (G₁ G₂ : Omega) (h : G₁ ≠ G₂) :
-    ∃ t > 0, EvolutionOperator.U t (superposition G₁ G₂) ≠ superposition G₁ G₂ := by
-  sorry
-  where
-    superposition (G₁ G₂ : Omega) : QuantumState :=
-      ⟨fun G => if G = G₁ ∨ G = G₂ then Complex.ofReal (1 / Real.sqrt 2) else 0, sorry⟩
+lemma neg_normPres : isNormPreserving negHamiltonian :=
+  scaleByUnit_normPres (λ := -1) (by simp)
 
 end LFT

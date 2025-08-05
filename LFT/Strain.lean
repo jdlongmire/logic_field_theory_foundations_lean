@@ -1,50 +1,81 @@
 import LFT.Graphs
 import Mathlib.Data.Real.Basic
-import Mathlib.Tactic.Linarith
 
 namespace LFT
 
-/-- Identity violation: count vertices without self-edges.
-    For admissible graphs, this is always 0 since identity is required -/
-noncomputable def v_I (_ : Omega) : ℝ := 0
+/-!
+# Logical Strain Functional
 
-/-- Non-decidability: entropy-like measure of logical indefiniteness.
-    TODO: Should return 0 for classical (single-vertex) graphs, >0 for superposition.
-    Current implementation: returns 1.0 for all graphs -/
-noncomputable def v_N (_ : Omega) : ℝ := 1.0
+This file defines the strain functional D(G) that quantifies logical inconsistency
+in admissible graphs. The strain has three components:
+- v_I: Identity law violations (always 0 for admissible graphs)
+- v_N: Non-decidability/superposition measure
+- v_E: Environmental/external constraints
+-/
 
-/-- Environmental misfit: deviation from experimental constraints.
-    TODO: Implement actual measurement deviations (observed - predicted)² -/
-noncomputable def v_E (_ : Omega) : ℝ := 0
+/-- Count vertices in a logical graph -/
+noncomputable def vertex_count (G : Omega) : ℕ :=
+  sorry -- Would need finite graph assumption or cardinality
 
-/-- The strain functional D(G) measures total logical inconsistency.
-    Weights are equally distributed (1/3 each) in this simplified model -/
+/-- Improved v_N: measures non-decidability based on graph structure -/
+noncomputable def v_N (G : Omega) : ℝ :=
+  if h : vertex_count G = 1 then 0  -- Classical (single vertex) has no strain
+  else 1.0  -- Non-classical has positive strain
+
+/-- Identity violations - always 0 for admissible graphs -/
+noncomputable def v_I (G : Omega) : ℝ := 0
+
+/-- Environmental constraints - for now, return 0 -/
+noncomputable def v_E (G : Omega) : ℝ := 0
+
+/-- The strain functional D(G) -/
 noncomputable def StrainFunctional (G : Omega) : ℝ :=
   (1/3) * v_I G + (1/3) * v_N G + (1/3) * v_E G
 
-/-- Strain is always non-negative -/
-theorem strain_nonneg (G : Omega) : 0 ≤ StrainFunctional G := by
-  unfold StrainFunctional v_I v_N v_E
-  simp
-  -- Currently: (1/3) * 0 + (1/3) * 1.0 + (1/3) * 0 = 1/3 ≥ 0
-  linarith
-
-/-- Classical (definite) states have zero strain.
-    NOTE: Requires v_N to distinguish classical from superposition graphs -/
+/-- Classical graphs have zero strain -/
 theorem classical_zero_strain : ∃ (G : Omega), StrainFunctional G = 0 := by
-  -- This theorem awaits a graph-dependent implementation of v_N
-  -- Classical graphs (single vertex, complete) should have v_N = 0
-  -- making StrainFunctional = (1/3)*0 + (1/3)*0 + (1/3)*0 = 0
+  -- We need to construct a single-vertex graph
+  sorry -- This requires constructing a specific Omega instance
+  -- In a complete implementation, we would:
+  -- 1. Define a single-vertex LogicalGraph
+  -- 2. Prove it's admissible
+  -- 3. Show vertex_count = 1
+  -- 4. Conclude StrainFunctional = 0
+
+/-- Alternative approach: Define classical graphs explicitly -/
+def IsClassical (G : Omega) : Prop :=
+  ∃! v : G.graph.Vertex, ∀ w : G.graph.Vertex, G.graph.Edge v w → w = v
+
+/-- Classical graphs have zero v_N -/
+theorem classical_zero_vN (G : Omega) (h : IsClassical G) : v_N G = 0 := by
   sorry
 
-/-- Superposition states have positive strain -/
-theorem superposition_positive_strain :
-  ∀ (G : Omega), (∃ v w : G.graph.Vertex, v ≠ w ∧ Reachable v w) →
-  0 < StrainFunctional G := by
-  intro G _
-  unfold StrainFunctional v_I v_N v_E
+/-- Therefore classical graphs have minimal strain -/
+theorem classical_minimal_strain (G : Omega) (h : IsClassical G) :
+    StrainFunctional G = 0 := by
+  unfold StrainFunctional
+  rw [v_I, v_E]
   simp
-  -- Currently all graphs have strain = 1/3 > 0
-  norm_num
+  rw [classical_zero_vN G h]
+  simp
+
+/-- Superposition (multi-vertex) graphs have positive strain -/
+theorem superposition_positive_strain :
+    ∀ (G : Omega), ¬IsClassical G → StrainFunctional G > 0 := by
+  intro G h_not_classical
+  unfold StrainFunctional
+  rw [v_I, v_E]
+  simp
+  -- Since G is not classical, v_N G = 1.0
+  sorry -- Need to prove v_N G = 1.0 when not classical
+
+/-- Strain is always non-negative -/
+theorem strain_nonneg : ∀ (G : Omega), 0 ≤ StrainFunctional G := by
+  intro G
+  unfold StrainFunctional
+  unfold v_I v_E
+  simp
+  -- v_N is either 0 or 1, both non-negative
+  sorry
 
 end LFT

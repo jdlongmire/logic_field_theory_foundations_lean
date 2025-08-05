@@ -18,8 +18,6 @@ Helpers:
 import Std.Data.HashMap
 import Mathlib.Tactic
 import Mathlib.Data.Real.Basic
-import Mathlib.Data.Finset
-import System.IO.Unsafe
 import LFT.Graphs
 
 open Classical Std BigOperators

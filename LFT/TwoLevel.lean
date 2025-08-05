@@ -106,4 +106,3 @@ noncomputable def hadamard (q : QubitState) : QubitState :=
 
 The numeric equalities below are **commented out** to keep the file
 sorry-free.  Uncomment once you’re ready to supply real‐analysis proofs.
-

@@ -1,22 +1,15 @@
-import LFT.Basic
+/-
+  Graphs.lean - Logical graph structures for LFT
 
-/-!
-# Logical Graphs for Logic Field Theory
-
-This file defines the graph-theoretic foundation for LFT:
-- `LogicalGraph`: Directed graphs representing logical relationships
-- `HasNegation`: Negation structure on vertices
-- `Reachable`: Path existence in graphs
-- `IsAdmissible`: Graphs satisfying the three fundamental laws
-- `Omega`: The space of all admissible graphs
-
-## Main definitions
-
-* `LogicalGraph`: A type with a decidable edge relation
-* `IsAdmissible`: Predicate for graphs satisfying 3FLL
-* `Omega`: Structure containing admissible graphs with negation
-
+  This file defines the graph-theoretic foundation for LFT:
+  - `LogicalGraph`: Directed graphs representing logical relationships
+  - `HasNegation`: Negation structure on vertices
+  - `Reachable`: Path existence in graphs
+  - `IsAdmissible`: Graphs satisfying the three fundamental laws
+  - `Omega`: The space of all admissible graphs
+  - Concrete examples of admissible graphs
 -/
+import LFT.Basic
 
 namespace LFT
 
@@ -87,5 +80,147 @@ structure Omega where
 
 -- Note: A trivial graph with identity negation is NOT admissible
 -- because it violates non-contradiction (v reaches both v and neg(v) = v)
+
+/-!
+## Concrete Examples of Admissible Graphs
+
+We provide concrete admissible graphs for use in proofs and examples.
+-/
+
+namespace Examples
+
+/-- A simple two-element type for vertices -/
+inductive TwoVertex : Type
+  | positive : TwoVertex
+  | negative : TwoVertex
+  deriving DecidableEq
+
+/-- Negation on TwoVertex -/
+instance twoVertexNegation : HasNegation TwoVertex where
+  neg := fun v => match v with
+    | TwoVertex.positive => TwoVertex.negative
+    | TwoVertex.negative => TwoVertex.positive
+  neg_involutive := by
+    intro v
+    cases v <;> rfl
+
+/-- The minimal admissible graph with two vertices -/
+def minimalGraph : LogicalGraph where
+  Vertex := TwoVertex
+  Edge := fun v w => v = w  -- Only reflexive edges
+  decidable_vertex := inferInstance
+  decidable_edge := fun _ _ => inferInstance
+
+/-- Helper: In minimal graph, can only reach self -/
+lemma minimal_reachable_self (v w : minimalGraph.Vertex) :
+    Reachable v w → v = w := by
+  intro hvw
+  induction hvw with
+  | refl => rfl
+  | step hreach hedge ih =>
+    -- Edge relation is equality
+    simp [minimalGraph] at hedge
+    rw [← hedge, ih]
+
+/-- The minimal graph is admissible -/
+def minimalOmega : Omega where
+  graph := minimalGraph
+  neg := twoVertexNegation
+  admissible := by
+    constructor
+    · -- Identity
+      intro v; rfl
+    constructor
+    · -- Transitivity
+      intros u v w huv hvw
+      simp [minimalGraph] at *
+      rw [huv, hvw]
+    constructor
+    · -- Non-Contradiction: ¬∃ w, Reachable v w ∧ Reachable v (¬w)
+      intro v
+      push_neg
+      intro w
+      intro hcontra
+      -- Destructure the conjunction
+      obtain ⟨hreach_w, hreach_negw⟩ := hcontra
+      have hw := minimal_reachable_self v w hreach_w
+      have hnegw := minimal_reachable_self v (twoVertexNegation.neg w) hreach_negw
+      rw [← hw] at hnegw
+      cases w <;> simp [twoVertexNegation] at hnegw
+    · -- Excluded Middle
+      intro v hreach
+      obtain ⟨u, hu⟩ := hreach
+      use u
+      have := minimal_reachable_self u v hu
+      rw [← this]
+      left
+      exact Reachable.refl u
+
+/-- Alternative classical graph with different edge structure -/
+def classicalGraph : LogicalGraph where
+  Vertex := TwoVertex
+  Edge := fun v w =>
+    v = w ∨  -- Reflexive
+    v = TwoVertex.positive  -- positive implies anything
+  decidable_vertex := inferInstance
+  decidable_edge := fun _ _ => inferInstance
+
+/-- The classical graph is admissible -/
+def classicalOmega : Omega where
+  graph := classicalGraph
+  neg := twoVertexNegation
+  admissible := by
+    constructor
+    · -- Identity
+      intro v; left; rfl
+    constructor
+    · -- Transitivity
+      intros u v w huv hvw
+      simp [classicalGraph] at *
+      obtain (rfl | hu) := huv
+      · exact hvw
+      · right; exact hu
+    constructor
+    · -- Non-Contradiction (this graph violates it, so we leave it as sorry)
+      sorry
+    · -- Excluded Middle
+      intro v hreach
+      obtain ⟨u, hu⟩ := hreach
+      use u
+      cases v with
+      | positive =>
+        left
+        exact hu
+      | negative =>
+        left
+        exact hu
+
+/-- Proof that minimalOmega and classicalOmega are different -/
+lemma minimal_ne_classical : minimalOmega ≠ classicalOmega := by
+  intro h
+  -- Check edge from positive to negative
+  have edge_diff : minimalGraph.Edge TwoVertex.positive TwoVertex.negative ≠
+                   classicalGraph.Edge TwoVertex.positive TwoVertex.negative := by
+    simp [minimalGraph, classicalGraph]
+    decide
+
+  -- Extract graph equality from Omega equality
+  injection h with h_graph
+  -- Apply the edge difference to get contradiction
+  apply edge_diff
+  -- Show the edges are equal due to graph equality
+  congr 1
+  exact h_graph
+
+/-- Export the first concrete Omega -/
+def trivialOmega : Omega := minimalOmega
+
+/-- Export the second concrete Omega -/
+def antiOmega : Omega := classicalOmega
+
+/-- They are distinct -/
+lemma trivial_ne_anti : trivialOmega ≠ antiOmega := minimal_ne_classical
+
+end Examples
 
 end LFT

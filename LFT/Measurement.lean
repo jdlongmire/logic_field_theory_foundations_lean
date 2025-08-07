@@ -52,24 +52,24 @@ noncomputable def collapsed_state
     -- Cannot collapse to zero amplitude state, return original
     ψ
   else
-    -- Normalize to unit amplitude on measured outcome
-    ⟨[(measured, 1)],
+    -- Normalize to unit amplitude while preserving phase
+    ⟨[(measured, a / Complex.abs a)],
      by simp,
-     by simp [listNormSq]⟩
+     by simp [listNormSq, Complex.abs_div, Complex.abs_abs];
+        rw [div_self (Complex.abs_ne_zero_iff.mpr h)]⟩
 
 /-- Born rule emerges from strain minimization -/
 theorem born_rule_from_strain (ψ : QuantumState) (G : Omega) :
     ℙ[collapsed_state ψ G] G = Complex.abs (ampOf ψ.amps G)^2 := by
   unfold collapsed_state
   split_ifs with h
-  · -- Case: amplitude is 0, state unchanged
+  · -- Case: amplitude is 0, so probability is 0
     simp [h]
-  · -- Case: collapsed to unit amplitude on G
+  · -- Case: collapsed to normalized amplitude a/|a| on G
     simp [ampOf, ampOf_eq_of_mem]
-    -- The collapsed state has amplitude 1 on G, so |1|² = 1
-    -- But we need to return the original |ψ(G)|²
-    -- This needs a better collapsed_state definition
-    sorry  -- TODO: Fix collapsed_state to preserve Born weights
+    -- Now |a/|a||² = |a|²/|a|² = 1, but we measure before collapse
+    -- The Born probability is from the original state
+    sorry  -- This still needs the right probability measure setup
 
 /-- Measurement destroys superposition -/
 theorem measurement_kills_superposition

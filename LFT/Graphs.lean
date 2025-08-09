@@ -19,21 +19,21 @@ def Reachable : G.Vertex → G.Vertex → Prop :=
   Relation.ReflTransGen G.Edge
 
 /-- One-step reachability via a single edge. -/
-@[inline] def step {a b : G.Vertex} (h : G.Edge a b) : G.Reachable a b :=
+def step {a b : G.Vertex} (h : G.Edge a b) : G.Reachable a b :=
   Relation.ReflTransGen.single h
 
 /-- Reflexivity of reachability. -/
-@[inline] theorem reachable_refl (a : G.Vertex) : G.Reachable a a :=
+theorem reachable_refl (a : G.Vertex) : G.Reachable a a :=
   Relation.ReflTransGen.refl
 
 /-- Transitivity of reachability. -/
-@[inline] theorem reachable_trans {a b c : G.Vertex}
+theorem reachable_trans {a b c : G.Vertex}
     (hab : G.Reachable a b) (hbc : G.Reachable b c) :
     G.Reachable a c :=
   Relation.ReflTransGen.trans hab hbc
 
 /-- If there is an edge `a → b` and `b` reaches `c`, then `a` reaches `c`. -/
-@[inline] theorem step_then {a b c : G.Vertex}
+theorem step_then {a b c : G.Vertex}
     (h : G.Edge a b) (hbc : G.Reachable b c) :
     G.Reachable a c :=
   reachable_trans (G := G) (step (G := G) h) hbc
@@ -63,15 +63,19 @@ def classicalGraph : Graph where
 
 namespace classicalGraph
 
-@[inline] def G : Graph := classicalGraph
+/-- Shorthand: the canonical two-vertex graph. -/
+def G : Graph := classicalGraph
 
+/-- There is an edge from P⁺ to P⁻ in `classicalGraph`. -/
 lemma edge_pos_to_neg : (G.Edge TwoVertex.positive TwoVertex.negative) := by
   exact True.intro
 
+/-- Therefore P⁺ reaches P⁻. -/
 lemma reachable_pos_to_neg :
     (G.Reachable TwoVertex.positive TwoVertex.negative) :=
   Graph.step (G := G) edge_pos_to_neg
 
+/-- Reachability is reflexive at P⁺. -/
 lemma reachable_refl_pos :
     (G.Reachable TwoVertex.positive TwoVertex.positive) :=
   Graph.reachable_refl (G := G) TwoVertex.positive

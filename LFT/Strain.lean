@@ -9,7 +9,6 @@ structure StrainWeights where
   wI : Real
   wN : Real
   wE : Real
-deriving Repr
 
 /-- Internal-contradiction strain (placeholder). -/
 constant vI : Graph → Real
@@ -25,7 +24,8 @@ def D (W : StrainWeights) (G : Graph) : Real :=
   W.wI * vI G + W.wN * vN G + W.wE * vE G
 
 /-- Sanity: zero weights give zero total strain. -/
-lemma D_zero_weights (G : Graph) : D { wI := 0, wN := 0, wE := 0 } G = 0 := by
+lemma D_zero_weights (G : Graph) :
+    D { wI := 0, wN := 0, wE := 0 } G = 0 := by
   simp [D]
 
 end LFT

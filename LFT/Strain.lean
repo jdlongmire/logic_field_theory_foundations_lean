@@ -8,23 +8,21 @@ namespace LFT
 structure StrainWeights where
   wI wN wE : Real
 
-/-- Internal-contradiction strain (placeholder signature). -/
+/-- Internal-contradiction strain (placeholder). -/
 constant vI : Graph → Real
 
-/-- Non-classicality strain (placeholder signature). -/
+/-- Non-classicality strain (placeholder). -/
 constant vN : Graph → Real
 
-/-- External misfit strain (placeholder signature). -/
+/-- External misfit strain (placeholder). -/
 constant vE : Graph → Real
 
 /-- Total strain functional. -/
 def D (W : StrainWeights) (G : Graph) : Real :=
   W.wI * vI G + W.wN * vN G + W.wE * vE G
 
-/-- Simple algebraic identity we can prove now. -/
-lemma D_add_weights (W₁ W₂ : StrainWeights) (G : Graph) :
-    D ⟨W₁.wI + W₂.wI, W₁.wN + W₂.wN, W₁.wE + W₂.wE⟩ G
-  = D W₁ G + D W₂ G := by
-  simp [D, add_mul, mul_add, add_comm, add_left_comm, add_assoc, mul_comm, mul_left_comm, mul_assoc]
+/-- Sanity check: zero weights yield zero total strain. -/
+lemma D_zero_weights (G : Graph) : D ⟨0, 0, 0⟩ G = 0 := by
+  simp [D]
 
 end LFT

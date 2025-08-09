@@ -1,87 +1,86 @@
-# logic_field_theory_foundations_lean
-Formal verification of Logic Field Theory (LFT) in Lean 4. We derive QM from the Three Fundamental Laws of Logic (Identity, Non-Contradiction, Excluded Middle), showing QM emerges from logical necessity not physical postulates. Includes proofs of complex amplitude necessity, Born rule emergence, and measurement from strain thresholds.
-
-```markdown
 # Logic Field Theory – Lean 4 Formalization
 
 ## Overview
 
 This repository contains the **machine-verifiable formalization** of *Logic Field Theory (LFT)* in **Lean 4**, based on the v3.0 paper:
 
-> **Logic Field Theory: Deriving Quantum Mechanics from the Three Fundamental Laws of Logic**  
-> James D. Longmire  
-> Northrop Grumman Fellow (unaffiliated research)  
-> ORCID: 0009-0009-1383-7698  
+> **Logic Field Theory: Deriving Quantum Mechanics from the Three Fundamental Laws of Logic**
+> James D. Longmire
+> Northrop Grumman Fellow (unaffiliated research)
+> ORCID: 0009-0009-1383-7698
 > August 3, 2025
 
 LFT is a **logic-first derivation** of quantum mechanics. It shows that the mathematical structure of QM—complex Hilbert spaces, unitary evolution, and the Born rule—emerges **necessarily** from the requirement that reality remain logically consistent under superposition, given the **Three Fundamental Laws of Logic (3FLL)**:
 
-1. **Identity**: \( A = A \)  
-2. **Non-Contradiction**: \( \neg (A \land \neg A) \)  
-3. **Excluded Middle**: \( A \lor \neg A \)  
+1. **Identity**: $A = A$
+2. **Non-Contradiction**: $\neg (A \land \neg A)$
+3. **Excluded Middle**: $A \lor \neg A$
 
-Unlike interpretations of QM that assume the formalism, LFT derives it from **graph-theoretic logical structures** and a **strain functional** \( D(G) \) defined via maximum entropy principles.
+Unlike interpretations of QM that assume the formalism, LFT derives it from **graph-theoretic logical structures** and a **strain functional** $D(G)$ defined via maximum entropy principles.
 
 ---
 
 ## Project Goals
 
-- **Primary:** Fully mechanize the LFT derivation in Lean 4, from logical axioms to testable quantum predictions.
-- **Secondary:** Provide a modular library for formal reasoning about pre-quantum logical structures.
-- **Tertiary:** Support experimental and theoretical research by producing machine-verified lemmas and theorems from the LFT framework.
+* **Primary:** Fully mechanize the LFT derivation in Lean 4, from logical axioms to testable quantum predictions.
+* **Secondary:** Provide a modular library for formal reasoning about pre-quantum logical structures.
+* **Tertiary:** Support experimental and theoretical research by producing machine-verified lemmas and theorems from the LFT framework.
 
 ---
 
 ## Repository Structure
 
 ```
-
 LFT/
-Basic.lean       # Three Fundamental Laws of Logic as axioms
-Graphs.lean      # Directed graph structures, entailment relations, admissibility
-Strain.lean      # Logical strain functional scaffold (vI, vN, vE)
-Dynamics.lean    # Hilbert space emergence, unitary evolution, Schrödinger derivation
-Tests.lean       # Unit tests for definitions and proofs
+  Basic.lean       # Three Fundamental Laws of Logic as axioms
+  Graphs.lean      # Directed graph structures, entailment relations, admissibility
+  Strain.lean      # Logical strain functional scaffold (vI, vN, vE)
+  Dynamics.lean    # Hilbert space emergence, unitary evolution, Schrödinger derivation
+  Tests.lean       # Unit tests for definitions and proofs
+```
 
-````
-
-- **`LFT/Basic.lean`**  
+* **`LFT/Basic.lean`**
   Encodes the 3FLL in Lean as foundational axioms.
-  
-- **`LFT/Graphs.lean`**  
+
+* **`LFT/Graphs.lean`**
   Defines **logical graphs**: vertices as propositions, directed edges as entailment. Includes admissibility checks for 3FLL compliance and graph operations (tensor product, superposition).
 
-- **`LFT/Strain.lean`**  
+* **`LFT/Strain.lean`**
   Implements the **strain functional**:
 
-  \[
+  $$
   D(G) = w_I v_I(G) + w_N v_N(G) + w_E v_E(G)
-  \]
+  $$
 
   with placeholders for:
-  - `vI` – **Identity violations** (path-proximity metric, Eq. (8) in paper)
-  - `vN` – **Non-decidability** (entropy measure, Eq. (9))
-  - `vE` – **Environmental misfit** (boundary mismatch, Eq. (10))
 
-- **`LFT/Dynamics.lean`**  
+  * `vI` – **Identity violations** (path-proximity metric, Eq. (8) in paper)
+  * `vN` – **Non-decidability** (entropy measure, Eq. (9))
+  * `vE` – **Environmental misfit** (boundary mismatch, Eq. (10))
+
+* **`LFT/Dynamics.lean`**
   Will implement:
-  - Hilbert space emergence (Section 5)
-  - Logical Lagrangian and Schrödinger equation (Section 6.2–6.3)
-  - Born rule derivation (Sections 6.6 & 7.5)
+
+  * Hilbert space emergence (Section 5)
+  * Logical Lagrangian and Schrödinger equation (Section 6.2–6.3)
+  * Born rule derivation (Sections 6.6 & 7.5)
 
 ---
 
 ## Current Status
 
 ### **Branch**
+
 `main`
 
 ### **Build**
+
 ✅ Clean compile:
+
 ```bash
 lake build
 lake build LFT.Strain
-````
+```
 
 ### **Checkpoint Tag**
 
@@ -180,6 +179,3 @@ This interdisciplinary background in digital engineering ecosystems, AI developm
 * **ORCID:** 0009-0009-1383-7698
 * **Email:** [longmire.jd@gmail.com](mailto:longmire.jd@gmail.com)
 * **GitHub:** [@jdlongmire](https://github.com/jdlongmire)
-
-```
-```

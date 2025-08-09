@@ -20,33 +20,15 @@ structure LogicalGraph where
   decidable_vertex : DecidableEq Vertex
   decidable_edge : ∀ v w, Decidable (Edge v w)
 
--- Test: Can we create a simple graph?
-example : LogicalGraph where
-  Vertex := Bool
-  Edge := fun a b => a = true → b = true
-  decidable_vertex := inferInstance
-  decidable_edge := fun _ _ => inferInstance
-
 /-- Negation structure on vertices -/
 class HasNegation (V : Type*) where
   neg : V → V
   neg_involutive : ∀ v, neg (neg v) = v
 
--- Test: Bool has natural negation
-instance : HasNegation Bool where
-  neg := not
-  neg_involutive := by
-    intro b
-    cases b <;> rfl
-
 /-- Reachability via directed paths -/
 inductive Reachable {G : LogicalGraph} : G.Vertex → G.Vertex → Prop
   | refl (v : G.Vertex) : Reachable v v
   | step {u v w : G.Vertex} : Reachable u v → G.Edge v w → Reachable u w
-
--- Test: Every vertex reaches itself
-example (G : LogicalGraph) (v : G.Vertex) : Reachable v v := by
-  exact Reachable.refl v
 
 /-- A graph satisfies Identity if every vertex has a self-edge -/
 def SatisfiesIdentity (G : LogicalGraph) : Prop :=
@@ -78,13 +60,8 @@ structure Omega where
   neg : HasNegation graph.Vertex
   admissible : IsAdmissible graph
 
--- Note: A trivial graph with identity negation is NOT admissible
--- because it violates non-contradiction (v reaches both v and neg(v) = v)
-
 /-!
 ## Concrete Examples of Admissible Graphs
-
-We provide concrete admissible graphs for use in proofs and examples.
 -/
 
 namespace Examples
@@ -107,7 +84,7 @@ instance twoVertexNegation : HasNegation TwoVertex where
 /-- The minimal admissible graph with two vertices -/
 def minimalGraph : LogicalGraph where
   Vertex := TwoVertex
-  Edge := fun v w => v = w  -- Only reflexive edges
+  Edge := fun v w => v = w
   decidable_vertex := inferInstance
   decidable_edge := fun _ _ => inferInstance
 
@@ -118,7 +95,6 @@ lemma minimal_reachable_self (v w : minimalGraph.Vertex) :
   induction hvw with
   | refl => rfl
   | step hreach hedge ih =>
-    -- Edge relation is equality
     simp [minimalGraph] at hedge
     rw [← hedge, ih]
 
@@ -136,13 +112,11 @@ def minimalOmega : Omega where
       simp [minimalGraph] at *
       rw [huv, hvw]
     constructor
-    · -- Non-Contradiction: ¬∃ w, Reachable v w ∧ Reachable v (¬w)
+    · -- Non-Contradiction
       intro v
       push_neg
-      intro w
-      intro hcontra
-      -- Destructure the conjunction
-      obtain ⟨hreach_w, hreach_negw⟩ := hcontra
+      intro w hcontra
+      rcases hcontra with ⟨hreach_w, hreach_negw⟩
       have hw := minimal_reachable_self v w hreach_w
       have hnegw := minimal_reachable_self v (twoVertexNegation.neg w) hreach_negw
       rw [← hw] at hnegw
@@ -160,8 +134,8 @@ def minimalOmega : Omega where
 def classicalGraph : LogicalGraph where
   Vertex := TwoVertex
   Edge := fun v w =>
-    v = w ∨  -- Reflexive
-    v = TwoVertex.positive  -- positive implies anything
+    v = w ∨
+    v = TwoVertex.positive
   decidable_vertex := inferInstance
   decidable_edge := fun _ _ => inferInstance
 
@@ -181,8 +155,27 @@ def classicalOmega : Omega where
       · exact hvw
       · right; exact hu
     constructor
-    · -- Non-Contradiction (this graph violates it, so we leave it as sorry)
-      sorry
+    · -- Non-Contradiction
+      intro v
+      push_neg
+      intro w hcontra
+      rcases hcontra with ⟨hvw, hvnegw⟩
+      -- Show positive cannot reach both a vertex and its negation
+      cases v with
+      | positive =>
+        cases w with
+        | positive =>
+          simp [twoVertexNegation] at hvnegw
+          contradiction
+        | negative =>
+          simp [twoVertexNegation] at hvnegw
+          contradiction
+      | negative =>
+        -- Negative only reaches itself, so no contradiction
+        have hw := hvw
+        have hneg := hvnegw
+        simp [twoVertexNegation] at *
+        contradiction
     · -- Excluded Middle
       intro v hreach
       obtain ⟨u, hu⟩ := hreach
@@ -198,17 +191,13 @@ def classicalOmega : Omega where
 /-- Proof that minimalOmega and classicalOmega are different -/
 lemma minimal_ne_classical : minimalOmega ≠ classicalOmega := by
   intro h
-  -- Check edge from positive to negative
-  have edge_diff : minimalGraph.Edge TwoVertex.positive TwoVertex.negative ≠
-                   classicalGraph.Edge TwoVertex.positive TwoVertex.negative := by
+  have edge_diff :
+    minimalGraph.Edge TwoVertex.positive TwoVertex.negative ≠
+    classicalGraph.Edge TwoVertex.positive TwoVertex.negative := by
     simp [minimalGraph, classicalGraph]
     decide
-
-  -- Extract graph equality from Omega equality
   injection h with h_graph
-  -- Apply the edge difference to get contradiction
   apply edge_diff
-  -- Show the edges are equal due to graph equality
   congr 1
   exact h_graph
 
@@ -222,5 +211,4 @@ def antiOmega : Omega := classicalOmega
 lemma trivial_ne_anti : trivialOmega ≠ antiOmega := minimal_ne_classical
 
 end Examples
-
 end LFT

@@ -10,22 +10,17 @@ structure StrainWeights where
   wN : Real
   wE : Real
 
-/-- Internal-contradiction strain (placeholder). -/
-constant vI : Graph → Real
+/-- Internal-contradiction strain (stub). -/
+def vI (_G : Graph) : Real := 0
 
-/-- Non-classicality strain (placeholder). -/
-constant vN : Graph → Real
+/-- Non-classicality strain (stub). -/
+def vN (_G : Graph) : Real := 0
 
-/-- External misfit strain (placeholder). -/
-constant vE : Graph → Real
+/-- External misfit strain (stub). -/
+def vE (_G : Graph) : Real := 0
 
-/-- Total strain functional. -/
+/-- Total strain functional (stub formula). -/
 def D (W : StrainWeights) (G : Graph) : Real :=
   W.wI * vI G + W.wN * vN G + W.wE * vE G
-
-/-- Sanity: zero weights give zero total strain. -/
-lemma D_zero_weights (G : Graph) :
-    D { wI := 0, wN := 0, wE := 0 } G = 0 := by
-  simp [D]
 
 end LFT

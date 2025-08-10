@@ -1,6 +1,7 @@
 import Mathlib
 import LFT.Graphs
 import LFT.Strain
+import LFT.Omega
 
 namespace LFT
 open Classical
@@ -26,3 +27,8 @@ lemma G0_strain_zero (W : StrainWeights) : D W G0 = 0 := by
   simpa [D, hI, hN, hE] using D_zero_if_components_zero W G0 hI hN hE
 
 end LFT
+
+/-- By the same token, `G0` is in Ω defined via total strain. -/
+lemma G0_mem_OmegaD (W : StrainWeights) : G0 ∈ LFT.OmegaD W := by
+  have h := G0_strain_zero W
+  simpa [LFT.OmegaD] using h

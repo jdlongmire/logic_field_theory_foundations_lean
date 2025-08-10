@@ -7,6 +7,7 @@ Relies on small `Graphs.lean` API.
 import Mathlib.Data.Real.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import LFT.Graphs
+import LFT.Entropy
 
 namespace LFT
 
@@ -82,5 +83,23 @@ def Omega (W : StrainWeights) := { G : Graph // Admissible W G }
 /-- Target theorem placeholder: admissible ↔ zero total strain (will be proved when vᵢ are final). -/
 axiom admissible_iff_zero_strain (W : StrainWeights) (G : Graph) :
   Admissible W G ↔ D W G = 0
+
+end LFT
+
+/-! ## Non-breaking `vN` migration helpers (entropy-backed), compile-safe
+We keep the current `vN` as-is. The helpers below let us compute an
+entropy version side-by-side and swap in later once the edge-type
+counts API is finalized.
+-/
+
+namespace LFT
+
+/-- Placeholder hook: per-graph structural counts (to be derived from edge types).
+    For now returns `[]`. -/
+noncomputable def structuralCounts (G : Graph) : List Nat := []
+
+/-- Entropy-backed alternative for non-classicality strain (Shannon in bits). -/
+noncomputable def vN_entropy (G : Graph) : ℝ :=
+  Entropy.shannonFromCounts (structuralCounts G)
 
 end LFT

@@ -17,7 +17,22 @@ LFT is a **logic-first derivation** of quantum mechanics. It shows that the math
 3. **Excluded Middle**: $A \lor \neg A$
 
 Unlike interpretations of QM that assume the formalism, LFT derives it from **graph-theoretic logical structures** and a **strain functional** $D(G)$ defined via maximum entropy principles.
+---
+## 📚 Citation
 
+If you use Logic Field Theory in your research, please cite:
+
+```bibtex
+@misc{longmire2025lft,
+  author       = {Longmire, James D.},
+  title        = {Logic Field Theory: Deriving Quantum Mechanics from the Three Fundamental Laws of Logic (v3.0)},
+  year         = {2025},
+  month        = {8},
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.16788881},
+  url          = {https://doi.org/10.5281/zenodo.16788881},
+  version      = {3.0}
+}
 ---
 
 ## Project Goals

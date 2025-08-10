@@ -17,3 +17,6 @@ lake-manifest.json
 elan-init.sh
 # scratch work
 scratch/
+
+# scratch backups
+scratch/

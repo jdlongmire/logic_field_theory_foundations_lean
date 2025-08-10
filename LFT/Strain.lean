@@ -7,6 +7,7 @@ Relies on small `Graphs.lean` API.
 import Mathlib.Data.Real.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import LFT.Graphs
+import LFT.Graphs.EdgeTypes
 import LFT.Entropy
 
 namespace LFT
@@ -101,5 +102,56 @@ noncomputable def structuralCounts (G : Graph) : List Nat := []
 /-- Entropy-backed alternative for non-classicality strain (Shannon in bits). -/
 noncomputable def vN_entropy (G : Graph) : ℝ :=
   Entropy.shannonFromCounts (structuralCounts G)
+
+end LFT
+
+/-! ## Wiring `vN_entropy` to real edge-type counts (non-breaking)
+We keep the existing `vN` unchanged for now. The helpers below pull
+counts via the `HasEdgeTypeCounts` typeclass; your current default
+instance returns zeros, so everything stays green until you add a
+real instance.
+-/
+
+namespace LFT
+open LFT.Graphs
+
+/-- Generic structural-counts helper for any type with `HasEdgeTypeCounts`. -/
+noncomputable def structuralCountsOf {α} [Graphs.HasEdgeTypeCounts α] (x : α) : List Nat :=
+  let c := (Graphs.HasEdgeTypeCounts.counts (α := α) x)
+  [c.id, c.entails, c.excludes]
+
+/-- Specialization to your `Graph`. This will start returning real counts
+once you provide a concrete `HasEdgeTypeCounts Graph` instance. -/
+noncomputable def structuralCounts (G : Graph) : List Nat :=
+  structuralCountsOf G
+
+/-- Entropy-backed alternative for non-classicality strain (Shannon, bits). -/
+noncomputable def vN_entropy (G : Graph) : ℝ :=
+  Entropy.shannonFromCounts (structuralCounts G)
+
+end LFT
+
+/-! ## Configurable vN: toggle entropy-backed variant without touching `D` -/
+
+namespace LFT
+
+/-- Feature flag for which `vN` to use. Default keeps the current `vN`. -/
+structure StrainConfig where
+  useEntropyVN : Bool := false
+
+/-- Final `vN` selected by config. -/
+noncomputable def vN_final (cfg : StrainConfig) (G : Graph) : ℝ :=
+  if cfg.useEntropyVN then vN_entropy G else vN G
+
+/-- Strain using the configurable `vN`. We keep `D` unchanged for backward compat. -/
+noncomputable def Dcfg (cfg : StrainConfig) (W : StrainWeights) (G : Graph) : ℝ :=
+  W.wI * vI G + W.wN * vN_final cfg G + W.wE * vE G
+
+/-- If the flag is off, `Dcfg = D`. -/
+lemma Dcfg_eq_D_when_disabled
+    (cfg : StrainConfig) (W : StrainWeights) (G : Graph)
+    (h : cfg.useEntropyVN = false) :
+    Dcfg cfg W G = D W G := by
+  simp [Dcfg, vN_final, h, D]
 
 end LFT

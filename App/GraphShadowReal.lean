@@ -1,28 +1,31 @@
 import LFT.Graphs
 import LFT.Graphs.RichGraph
 import LFT.Graphs.Shadow
+import LFT.Graphs.Snapshot
 import LFT.Graphs.EdgeTypes
+import App.EdgeClassifier
 
 /-!
-App-layer: provide a real (for now: demo) mapping from `Graph` → `RichGraph`.
-This activates entropy-based vN for plain `Graph` via the shadow hook.
+App-layer shadow: build RichGraph from your Graph snapshot using a classifier.
 -/
 
 namespace App
 open LFT
 open LFT.Graphs
 
-/-- Demo RichGraph: one of each edge type. Replace with your real converter later. -/
-def rg_demo : RichGraph :=
-  { V := ({}.insert "p").insert "q",
-    E := [("p","p", EdgeType.id),
-          ("p","q", EdgeType.entails),
-          ("q","p", EdgeType.excludes)] }
+/-- Convert a core Graph to a RichGraph using the app snapshot & classifier. -/
+def toRichGraph (G : LFT.Graph) : Option RichGraph :=
+  let snap := (HasSnapshot.snapshot G)
+  let V    := snap.vertices.foldl (fun acc v => acc.insert v) ({} : Finset String)
+  let E : List (String × String × EdgeType) :=
+    snap.edges.map (fun (vw : String × String) =>
+      let v := vw.fst; let w := vw.snd
+      if EdgeClassifier.isId v w then (v, w, EdgeType.id)
+      else if EdgeClassifier.isExcludes v w then (v, w, EdgeType.excludes)
+      else (v, w, EdgeType.entails))
+  if V.isEmpty ∧ E.isEmpty then none else some { V := V, E := E }
 
-/-- Real converter placeholder: always returns `rg_demo` for now. -/
-def toRichGraph (G : LFT.Graph) : Option RichGraph := some rg_demo
-
-/-- Non-local instance: activates shadow for all `Graph` values. -/
+/-- Non-local instance: activates shadow for all `Graph` values using snapshot+classifier. -/
 instance : GraphHasRichShadow LFT.Graph where
   toRich := toRichGraph
 

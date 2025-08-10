@@ -1,25 +1,26 @@
 import Mathlib
+import LFT.Graphs
 
 /-!
-LFT.Hilbert — v4.0 §5 scaffolding
-Defines opaque placeholders for the graph-based basis, free space, and a state type.
-We’ll replace these with real constructions after the branch skeleton is stable.
+LFT.Hilbert — minimal free vector space scaffold (compile-safe)
+We use Graph as a provisional basis. Later we'll switch to Ω (admissible graphs).
+No inner product yet; just a vector space and a `ket`.
 -/
 
 namespace LFT
 namespace Hilbert
 
-/-- Opaque basis element; will become {|G⟩ : G ∈ Ω}. -/
-constant BasisVec : Type
+open Classical
 
-/-- Free vector space placeholder over ℂ. -/
-constant V : Type
+/-- Provisional basis: graphs. Later: subtype of admissible graphs. -/
+abbrev BasisVec := Graph
 
-/-- Completed Hilbert space placeholder. -/
-constant ℋ : Type
+/-- Free vector space over ℂ with finite support. -/
+abbrev V := BasisVec →₀ ℂ
 
-/-- Map from basis to vectors (Dirac ket) — placeholder signature. -/
-constant ket : BasisVec → V
+/-- Dirac-style embedding of a basis vector. -/
+noncomputable def ket (b : BasisVec) : V :=
+  Finsupp.single b (1 : ℂ)
 
 end Hilbert
 end LFT

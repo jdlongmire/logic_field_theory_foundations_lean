@@ -5,12 +5,25 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "postCreateCommand": "curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none && echo 'source $HOME/.elan/env' >> ~/.bashrc",
-  "postStartCommand": "lake build",
+  "postStartCommand": "source $HOME/.elan/env && lake build",
+  "onCreateCommand": "git config --global --add safe.directory /workspaces/logic_field_theory_foundations_lean",
   "customizations": {
     "vscode": {
       "extensions": [
         "leanprover.lean4"
-      ]
+      ],
+      "settings": {
+        "lean4.serverEnvPaths": ["$HOME/.elan/bin"],
+        "files.watcherExclude": {
+          "**/.git/objects/**": true,
+          "**/.git/subtree-cache/**": true,
+          "**/lake-packages/**": true,
+          "**/.lake/**": true
+        }
+      }
     }
+  },
+  "remoteEnv": {
+    "PATH": "${localEnv:PATH}:${containerEnv:HOME}/.elan/bin"
   }
 }

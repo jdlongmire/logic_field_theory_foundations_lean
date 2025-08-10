@@ -69,3 +69,18 @@ noncomputable def predictedVisibility (Dval : ℝ) : ℝ :=
 
 
 end LFT
+
+namespace LFT
+
+/-- Provisional admissibility: all three strain components vanish. -/
+def Admissible (W : StrainWeights) (G : Graph) : Prop :=
+  vI G = 0 ∧ vN G = 0 ∧ vE G = 0
+
+/-- Ω as the subtype of graphs admissible under weights W. -/
+def Omega (W : StrainWeights) := { G : Graph // Admissible W G }
+
+/-- Target theorem placeholder: admissible ↔ zero total strain (will be proved when vᵢ are final). -/
+axiom admissible_iff_zero_strain (W : StrainWeights) (G : Graph) :
+  Admissible W G ↔ D W G = 0
+
+end LFT

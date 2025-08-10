@@ -137,7 +137,7 @@ namespace LFT
 
 /-- Feature flag for which `vN` to use. Default keeps the current `vN`. -/
 structure StrainConfig where
-  useEntropyVN : Bool := false
+  useEntropyVN : Bool := true
 
 /-- Final `vN` selected by config. -/
 noncomputable def vN_final (cfg : StrainConfig) (G : Graph) : ℝ :=

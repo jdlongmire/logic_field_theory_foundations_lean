@@ -54,4 +54,18 @@ lemma D_zero_if_components_zero
 
 end  -- closes `noncomputable section`
 
+/-! # Utilities: base-2 entropy and experimental visibility hook -/
+
+noncomputable def log2 (x : ℝ) : ℝ := Real.log x / Real.log 2
+
+/-- Shannon entropy in bits (base 2) for a finite list of probabilities.
+    Ignores nonpositive entries. Returns 0 for empty/degenerate inputs. -/
+noncomputable def entropy2 (ps : List ℝ) : ℝ :=
+  ps.foldl (fun acc p => if p > 0 then acc - p * log2 p else acc) 0.0
+
+/-- Simple visibility prediction model: V = 1 − 10^{-6} D. -/
+noncomputable def predictedVisibility (Dval : ℝ) : ℝ :=
+  1.0 - (1e-6 : ℝ) * Dval
+
+
 end LFT

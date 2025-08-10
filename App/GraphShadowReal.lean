@@ -23,7 +23,7 @@ inductive Scenario | classical | entailment | superposition | epr
 deriving Repr, DecidableEq
 
 /-- Change this to try different seeds quickly. -/
-def activeScenario : Scenario := .superposition
+def activeScenario : Scenario := .epr
 
 /-- Resolve the active seed dataset. -/
 def pickDataset : App.Data.Dataset :=

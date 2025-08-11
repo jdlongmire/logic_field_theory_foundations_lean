@@ -4,10 +4,6 @@ open Lake DSL
 package lft
 lean_lib LFT
 
--- pin mathlib to today's working commit
+-- Minimal dependency: just mathlib
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "5646947707336a76476970763750a65107448834"
-
--- optional: pin a ProofWidgets release (prebuilt assets = less npm churn)
-require proofwidgets from git
-  "https://github.com/leanprover-community/ProofWidgets4.git" @ "v0.0.68"
+  "https://github.com/leanprover-community/mathlib4.git" @ "8ad5cdd0e48e51d0aeb2e7a4c8472b1499b7c103"

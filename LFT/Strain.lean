@@ -7,6 +7,8 @@ Relies on small `Graphs.lean` API.
 import Mathlib.Data.Real.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import LFT.Graphs
+import LFT.Graphs.EdgeTypes
+import LFT.Entropy
 
 namespace LFT
 
@@ -67,5 +69,89 @@ noncomputable def entropy2 (ps : List ℝ) : ℝ :=
 noncomputable def predictedVisibility (Dval : ℝ) : ℝ :=
   1.0 - (1e-6 : ℝ) * Dval
 
+
+end LFT
+
+namespace LFT
+
+/-- Provisional admissibility: all three strain components vanish. -/
+def Admissible (W : StrainWeights) (G : Graph) : Prop :=
+  vI G = 0 ∧ vN G = 0 ∧ vE G = 0
+
+/-- Ω as the subtype of graphs admissible under weights W. -/
+def Omega (W : StrainWeights) := { G : Graph // Admissible W G }
+
+/-- Target theorem placeholder: admissible ↔ zero total strain (will be proved when vᵢ are final). -/
+axiom admissible_iff_zero_strain (W : StrainWeights) (G : Graph) :
+  Admissible W G ↔ D W G = 0
+
+end LFT
+
+/-! ## Non-breaking `vN` migration helpers (entropy-backed), compile-safe
+We keep the current `vN` as-is. The helpers below let us compute an
+entropy version side-by-side and swap in later once the edge-type
+counts API is finalized.
+-/
+
+namespace LFT
+
+/-- Placeholder hook: per-graph structural counts (to be derived from edge types).
+    For now returns `[]`. -/
+noncomputable def structuralCounts (G : Graph) : List Nat := []
+
+/-- Entropy-backed alternative for non-classicality strain (Shannon in bits). -/
+noncomputable def vN_entropy (G : Graph) : ℝ :=
+  Entropy.shannonFromCounts (structuralCounts G)
+
+end LFT
+
+/-! ## Wiring `vN_entropy` to real edge-type counts (non-breaking)
+We keep the existing `vN` unchanged for now. The helpers below pull
+counts via the `HasEdgeTypeCounts` typeclass; your current default
+instance returns zeros, so everything stays green until you add a
+real instance.
+-/
+
+namespace LFT
+open LFT.Graphs
+
+/-- Generic structural-counts helper for any type with `HasEdgeTypeCounts`. -/
+noncomputable def structuralCountsOf {α} [Graphs.HasEdgeTypeCounts α] (x : α) : List Nat :=
+  let c := (Graphs.HasEdgeTypeCounts.counts (α := α) x)
+  [c.id, c.entails, c.excludes]
+
+/-- Specialization to your `Graph`. This will start returning real counts
+once you provide a concrete `HasEdgeTypeCounts Graph` instance. -/
+noncomputable def structuralCounts (G : Graph) : List Nat :=
+  structuralCountsOf G
+
+/-- Entropy-backed alternative for non-classicality strain (Shannon, bits). -/
+noncomputable def vN_entropy (G : Graph) : ℝ :=
+  Entropy.shannonFromCounts (structuralCounts G)
+
+end LFT
+
+/-! ## Configurable vN: toggle entropy-backed variant without touching `D` -/
+
+namespace LFT
+
+/-- Feature flag for which `vN` to use. Default keeps the current `vN`. -/
+structure StrainConfig where
+  useEntropyVN : Bool := true
+
+/-- Final `vN` selected by config. -/
+noncomputable def vN_final (cfg : StrainConfig) (G : Graph) : ℝ :=
+  if cfg.useEntropyVN then vN_entropy G else vN G
+
+/-- Strain using the configurable `vN`. We keep `D` unchanged for backward compat. -/
+noncomputable def Dcfg (cfg : StrainConfig) (W : StrainWeights) (G : Graph) : ℝ :=
+  W.wI * vI G + W.wN * vN_final cfg G + W.wE * vE G
+
+/-- If the flag is off, `Dcfg = D`. -/
+lemma Dcfg_eq_D_when_disabled
+    (cfg : StrainConfig) (W : StrainWeights) (G : Graph)
+    (h : cfg.useEntropyVN = false) :
+    Dcfg cfg W G = D W G := by
+  simp [Dcfg, vN_final, h, D]
 
 end LFT

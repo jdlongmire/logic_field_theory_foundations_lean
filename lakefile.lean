@@ -4,10 +4,18 @@ open Lake DSL
 package lft
 lean_lib LFT
 
--- pin mathlib to today's working commit
+-- Nightly-aligned deps (track latest heads)
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "5646947707336a76476970763750a65107448834"
+  "https://github.com/leanprover-community/mathlib4.git" @ "master"
 
--- optional: pin a ProofWidgets release (prebuilt assets = less npm churn)
 require proofwidgets from git
-  "https://github.com/leanprover-community/ProofWidgets4.git" @ "v0.0.68"
+  "https://github.com/leanprover-community/ProofWidgets4.git" @ "main"
+
+require batteries from git
+  "https://github.com/leanprover-community/batteries.git" @ "main"
+
+require aesop from git
+  "https://github.com/leanprover-community/aesop.git" @ "master"
+
+require Qq from git
+  "https://github.com/leanprover-community/quote4.git" @ "main"

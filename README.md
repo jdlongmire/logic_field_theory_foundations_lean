@@ -59,10 +59,7 @@ If you use Logic Field Theory in your research, please cite:
 ## 🔗 Quick Links
 
 - 📖 [Read the Paper (v3.0)](Working_Papers/Logic_Field_Theory___Foundations_v3.0.pdf)
-- 🔢 [View on Zenodo]([https://zenodo.org/uploads/16788881](https://zenodo.org/uploads/16788881))
-- 🏗️ [Core Theory](LFT/)
-- 🧪 [Concrete Examples](App/Data/Seed.lean)
-- 📊 [Experimental Predictions](docs/predictions.md)
+- 🔢 [View on Zenodo](https://zenodo.org/uploads/16788881)
 
 ## Project Goals
 

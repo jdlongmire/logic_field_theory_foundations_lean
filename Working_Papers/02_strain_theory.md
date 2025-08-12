@@ -11,15 +11,25 @@ This file introduces the **logical strain** functional $D$ on admissible states.
 
 ---
 
+ah - I found the problem - when you do the code like this:
+
+$$
+
+v_N(G) = -\sum_{t} p(t) \log p(t).
+
+$$
+
+it doesn't render properly, but when you do this:
+
+$$ v_N(G) = -\sum_{t} p(t) \log p(t).$$
+
+it does
+
 ## 1. Definition
 
 For an admissible configuration $G \in \mathcal{A}$, define
 
-$$
-
-D(G)  =  w_I  v_I(G)\; +\; w_N  v_N(G)\; +\; w_E  v_E(G),
-
-$$
+$$D(G)  =  w_I  v_I(G)\; +\; w_N  v_N(G)\; +\; w_E  v_E(G),$$
 
 with nonnegative weights $w_I, w_N, w_E$.
 

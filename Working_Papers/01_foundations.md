@@ -13,11 +13,12 @@ This file establishes the formal backbone of Logic Field Theory (LFT). It fixes 
 
 ## 1. Core identity
 
-$$
+| $\mathcal{A} = \mathbb{L}(\mathcal{S})$ |
+|---|
 
-\boxed{\;\mathcal{A} = \mathbb{L}(\mathcal{S})\;}
 
-$$
+
+
 
 - **$\mathcal{S}$**  Information-state universe. Concrete model: finite directed labeled graphs with a designated negation map $v\mapsto \lnot v$.  
 - **$\mathbb{L}$**  Logic-enforcement operator that applies the **Three Fundamental Laws of Logic (3FLL)** to elements of $\mathcal{S}$.  
